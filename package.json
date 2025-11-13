@@ -1,9 +1,10 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "ananthu-online",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
@@ -41,6 +42,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
+    "@react-three/postprocessing": "^2.16.1",
     "@tanstack/react-query": "^5.83.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -64,6 +66,7 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.160.1",
+    "postprocessing": "^6.34.1",
     "vaul": "^0.9.9",
     "zod": "^3.25.76"
   },

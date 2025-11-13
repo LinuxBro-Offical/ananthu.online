@@ -49,7 +49,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
+        sans: ['Montserrat', 'sans-serif'],
       },
       backgroundImage: {
         'gradient-mango': 'var(--gradient-mango)',

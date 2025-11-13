@@ -1,3 +1,54 @@
+# Frontend build artifacts
+dist/
+build/
+.vite/
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*.local
+.env.local
+
+# Editor & OS cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Backend Python artifacts
+backend/__pycache__/
+backend/**/*.pyc
+backend/**/*.pyo
+backend/**/*.pyd
+backend/.pytest_cache/
+
+# Virtual environments
+backend/env/
+venv/
+.venv/
+
+# Django collectstatic
+backend/staticfiles/
+
+# SQLite database
+backend/db.sqlite3
+
+# Media uploads (keep sample seeding script)
+backend/media/
 # Logs
 logs
 *.log

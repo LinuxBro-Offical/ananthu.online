@@ -1,73 +1,183 @@
-# Welcome to your Lovable project
+# Mango Glow Portfolio — Full Stack Digital Experience
 
-## Project info
+Ananthu S Kumar’s cinematic portfolio combines a Vite + React front-end with a reusable Django REST backend. Every on-page element (navigation, hero, skills, projects, testimonials, contact, resumes, footer) is editable through Django admin and delivered via typed APIs consumed by the React app.
 
-**URL**: https://lovable.dev/projects/0a6a86a8-bd3d-4d8b-92cb-e2a91f6d2e1e
+---
 
-## How can I edit this code?
+## 1. Project Structure
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/0a6a86a8-bd3d-4d8b-92cb-e2a91f6d2e1e) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+ananthu-online/
+├── .gitignore
+├── README.md                # This document
+├── backend/                 # Django project (REST API + admin)
+│   ├── backend/             # Settings, URL routing
+│   ├── content/             # Domain models, serializers, viewsets, seed command
+│   ├── env/                 # Python virtual environment (ignored in git)
+│   ├── media/               # Uploaded assets (ignored in git)
+│   ├── manage.py
+│   └── requirements.txt
+└── src/                     # Vite + React front-end
+    ├── assets/              # Static imagery and textures
+    ├── components/          # UI components (Hero, Projects, Skills, etc.)
+    ├── hooks/               # React Query wrapper (`usePortfolioContent`)
+    ├── lib/                 # API helper (`src/lib/api.ts`)
+    ├── pages/               # Application routes
+    └── index.css            # Global Tailwind layer
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 2. Prerequisites
 
-**Use GitHub Codespaces**
+| Tool            | Version / Note                             |
+|-----------------|---------------------------------------------|
+| Node.js         | ≥ 18.18.0 (Vite requirement)                |
+| npm             | ≥ 9 (ships with Node ≥18)                   |
+| Python          | ≥ 3.10                                      |
+| pip / venv      | For backend dependency management           |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 3. Backend Setup (Django + DRF)
 
-This project is built with:
+```bash
+cd backend
+python3 -m venv env
+source env/bin/activate              # Windows: env\Scripts\activate
+pip install -r requirements.txt
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+# Optional: configure environment variables
+cp .env.example .env                 # create if needed, adjust settings
 
-## How can I deploy this project?
+# Database + seed content
+./env/bin/python manage.py migrate
+./env/bin/python manage.py createsuperuser   # optional for admin access
+./env/bin/python manage.py seed_portfolio --reset
 
-Simply open [Lovable](https://lovable.dev/projects/0a6a86a8-bd3d-4d8b-92cb-e2a91f6d2e1e) and click on Share -> Publish.
+# Start API server
+./env/bin/python manage.py runserver 0.0.0.0:8000
+```
 
-## Can I connect a custom domain to my Lovable project?
+**Seed Command Highlights**
+- Site/hero copy + CTA behaviour (modal, scroll, or external URL)
+- Navigation structure
+- About section content, highlights, imagery
+- Skills categories with technology logos (supports URL or uploaded images)
+- Projects with technology tags, live/code links, gallery images
+- Testimonials, social links, footer copy
+- Placeholder PDFs for professional & ATS resumes
 
-Yes, you can!
+`seed_portfolio` supports `--reset` to wipe existing content before reseeding. Without `--reset`, it upserts values idempotently.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 4. Front-end Setup (Vite + React)
+
+```bash
+npm install
+
+# Configure API origin for the React app
+cp .env.example .env.local            # create if missing
+# Example .env.local
+# VITE_BACKEND_URL=http://127.0.0.1:8000
+
+npm run dev                           # http://localhost:5173 by default
+```
+
+`src/lib/api.ts` reads `VITE_BACKEND_URL` (preferred). For backwards compatibility it also accepts `VITE_API_BASE_URL` ending in `/api`. The API helper appends `/api/portfolio/` automatically.
+
+---
+
+## 5. API Reference
+
+All endpoints live under `/api/`. Responses are JSON; authentication is not required (read-only).
+
+### `GET /api/portfolio/`
+Aggregated payload used by the React front-end. Includes:
+- `site`: hero + CTA configuration, WhatsApp/Calendly links, contact details.
+- `navigation`: ordered array of links (`label`, `target`, `is_external`).
+- `about`: heading, subtitle, description, highlights, profile image.
+- `skills`: categories with nested skills (logos served as absolute URLs).
+- `projects`: includes gradients, description, live link, `code_url`, technology chips, and `gallery` images (absolute URLs).
+- `testimonials`, `social_links`, `footer`, `resumes`.
+
+### Individual Endpoints
+
+| Endpoint                  | Description                                                      |
+|---------------------------|------------------------------------------------------------------|
+| `GET /api/site-settings/` | Site branding, hero copy, CTA behaviours, contact links          |
+| `GET /api/navigation/`    | Navigation items with order and internal/external flag           |
+| `GET /api/about/`         | About section, highlights, profile imagery                       |
+| `GET /api/skills/`        | Skill categories, each with ordered skills                       |
+| `GET /api/projects/`      | Projects with tech stack, `code_url`, `live_url`, gallery images |
+| `GET /api/testimonials/`  | Testimonials (author, role, quote)                               |
+| `GET /api/social/`        | Contact/social links with Lucide icon identifiers                |
+| `GET /api/resumes/`       | Downloadable resume URLs (professional / ATS)                    |
+| `GET /api/footer/`        | Footer text + tagline                                            |
+
+**Notes**
+- All image/file fields are returned as absolute URLs when a request context is available.
+- Gallery images originate from the `ProjectImage` model; manage them via admin.
+- Resume download links map to the files uploaded in Django admin.
+
+---
+
+## 6. Managing Content via Admin
+
+1. Start the backend (`manage.py runserver`) and navigate to `/admin/`.
+2. Update any model instance (Site Settings, Navigation Link, Skill Category, Project, etc.).
+3. Upload gallery images, technology logos, and resume PDFs directly in admin.
+4. Front-end auto-refreshes on reload thanks to React Query caching (stale time 5 minutes).
+
+**Adding Projects**
+- Provide gradient colours, live URL, GitHub (`code_url`), and descriptive copy.
+- Upload gallery images inlined via the Project’s gallery in admin.
+- Tech stack entries automatically surface as tags and in the gallery modal.
+
+---
+
+## 7. Scripts & Tooling
+
+| Command                                           | Purpose                                           |
+|---------------------------------------------------|---------------------------------------------------|
+| `npm run dev`                                     | Start Vite development server                     |
+| `npm run build`                                   | Production build                                  |
+| `npm run lint`                                    | Run ESLint                                        |
+| `./env/bin/python manage.py runserver`            | Start Django REST backend                         |
+| `./env/bin/python manage.py seed_portfolio --reset` | Reseed portfolio content                        |
+| `./env/bin/python manage.py test`                 | (Optional) Run Django tests                       |
+
+---
+
+## 8. Deployment Notes
+
+- **Frontend**: `npm run build` outputs static assets in `dist/`. Serve via CDN or static hosting (Vercel, Netlify, CloudFront, etc.).
+- **Backend**: Deploy Django behind Gunicorn/Uvicorn + Nginx (or similar). Configure environment variables (`DEBUG`, `ALLOWED_HOSTS`, `DATABASE_URL`, `MEDIA_ROOT`).
+- **Media**: Move media uploads to cloud storage (S3, GCS) in production; update `MEDIA_URL` and storage backend accordingly.
+- **Security**: Generate a strong `SECRET_KEY`, toggle `DEBUG=False`, configure `CORS_ALLOWED_ORIGINS`, and enforce HTTPS.
+
+---
+
+## 9. Extensibility
+
+- Add new content blocks by creating a model + serializer + viewset in `backend/content`.
+- Use `usePortfolioContent` or create additional React Query hooks for new endpoints.
+- The 3D/animation layers (Three.js, GSAP, Framer Motion) are modular—enhance or disable per section.
+- Resume modal & CTA logic already support additional variants (e.g., Calendly, WhatsApp, email).
+
+---
+
+## 10. License & Credits
+
+This project is proprietary to **Ananthu S Kumar**. Please request permission before reuse.  
+Design & engineering inspired by cinematic UI/UX principles, Mango Glow theme by Ananthu S Kumar.
+
+For inquiries or collaborations:
+- Portfolio: https://ananthu.online
+- Email: hello@ananthu.online
+- WhatsApp: https://wa.me/919876543210
+
+---
+
+Happy shipping! 🍋✨
