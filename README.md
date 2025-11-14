@@ -4,6 +4,9 @@ Ananthu S Kumar’s cinematic portfolio combines a Vite + React front-end with a
 
 ---
 
+<img width="2544" height="1360" alt="image" src="https://github.com/user-attachments/assets/2f076530-dcfa-432a-8267-b9364714f1d5" />
+
+
 ## 1. Project Structure
 
 ```
