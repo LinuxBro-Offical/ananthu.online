@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import gsap from "gsap";
 import heroBg from "@/assets/hero-bg.jpg";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { MessageCircle, Calendar, SendHorizonal } from "lucide-react";
 import { usePortfolioContent } from "@/hooks/usePortfolioContent";
+import { postContactMessage } from "@/lib/api";
 
 function AnimatedSphere() {
   return (
@@ -50,11 +52,14 @@ function FloatingOrbs() {
 
 export const Hero = () => {
   const [isHireModalOpen, setIsHireModalOpen] = useState(false);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [shouldRenderCanvas, setShouldRenderCanvas] = useState(false);
   const { data } = usePortfolioContent();
   const site = data?.site;
   const titleRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
@@ -77,6 +82,23 @@ export const Hero = () => {
         "-=0.4"
       );
   }, []);
+
+  useEffect(() => {
+    if (isMobile) {
+      setShouldRenderCanvas(false);
+      return;
+    }
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      setShouldRenderCanvas(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setShouldRenderCanvas(true), 450);
+    return () => window.clearTimeout(timer);
+  }, [isMobile]);
 
   const primaryLabel = site?.primary_cta_label || "Hire Me";
   const secondaryLabel = site?.secondary_cta_label || "View Work";
@@ -122,33 +144,81 @@ export const Hero = () => {
     }
   };
 
-  const handleContactSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleContactSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    toast.success("Thanks! I’ll get back to you shortly.");
-    setIsHireModalOpen(false);
+    if (isSendingMessage) {
+      return;
+    }
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const payload = {
+      name: String(formData.get("name") || "").trim(),
+      email: String(formData.get("email") || "").trim(),
+      project: String(formData.get("project") || "").trim(),
+      message: String(formData.get("message") || "").trim(),
+    };
+
+    if (!payload.name || !payload.email || !payload.project || !payload.message) {
+      toast.error("Please complete all fields before sending.");
+      return;
+    }
+
+    try {
+      setIsSendingMessage(true);
+      await postContactMessage(payload);
+      toast.success("Thanks! I’ll get back to you shortly.");
+      form.reset();
+      setIsHireModalOpen(false);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to send message right now.";
+      toast.error(message);
+    } finally {
+      setIsSendingMessage(false);
+    }
   };
 
-  const whatsappLink = site?.whatsapp_link || "https://wa.me/919876543210";
-  const calendlyLink =
-    site?.calendly_link || "https://calendly.com/ananthusuresh/30min";
+  const whatsappLink = useMemo(() => {
+    const rawValue = site?.whatsapp_link?.trim() || site?.contact_phone?.trim();
+    if (!rawValue) {
+      return undefined;
+    }
 
-  const quickLinks = useMemo(
-    () => [
-      {
+    if (rawValue.startsWith("http://") || rawValue.startsWith("https://")) {
+      return rawValue;
+    }
+
+    const digits = rawValue.replace(/[^\d]/g, "");
+    if (!digits) {
+      return undefined;
+    }
+
+    return `https://wa.me/${digits}`;
+  }, [site?.whatsapp_link, site?.contact_phone]);
+
+  const calendlyLink = site?.calendly_link;
+
+  const quickLinks = useMemo(() => {
+    const links = [];
+    if (whatsappLink) {
+      links.push({
         label: "WhatsApp Chat",
         href: whatsappLink,
         icon: <MessageCircle className="h-4 w-4 text-[#25D366]" />,
         meta: "Instant",
-      },
-      {
+      });
+    }
+    if (calendlyLink) {
+      links.push({
         label: "Book a Call",
         href: calendlyLink,
         icon: <Calendar className="h-4 w-4 text-[#0069ff]" />,
         meta: "15-30 min",
-      },
-    ],
-    [whatsappLink, calendlyLink]
-  );
+      });
+    }
+    return links;
+  }, [whatsappLink, calendlyLink]);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -162,17 +232,21 @@ export const Hero = () => {
       />
 
       <div className="absolute inset-0 z-10">
-        <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[10, 10, 5]} intensity={1} color="#fb641b" />
-          <pointLight position={[-10, -10, -5]} intensity={0.5} color="#fbbf24" />
-          <AnimatedSphere />
-          <FloatingOrbs />
-          <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={0.5} />
-        </Canvas>
+        {shouldRenderCanvas ? (
+          <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[10, 10, 5]} intensity={1} color="#fb641b" />
+            <pointLight position={[-10, -10, -5]} intensity={0.5} color="#fbbf24" />
+            <AnimatedSphere />
+            <FloatingOrbs />
+            <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={0.5} />
+          </Canvas>
+        ) : (
+          <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,rgba(251,100,27,0.2),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(255,191,36,0.18),transparent_60%)]" />
+        )}
       </div>
 
-      <div className="absolute inset-0 z-20 bg-gradient-to-b from-transparent via-background/50 to-background" />
+      <div className="absolute inset-0 z-20 bg-gradient-to-b from-background/10 via-background/65 to-background" />
 
       <div className="relative z-30 mx-auto max-w-5xl px-4 text-center">
         <motion.h1
@@ -265,26 +339,40 @@ export const Hero = () => {
             <form onSubmit={handleContactSubmit} className="space-y-4">
               <div className="grid gap-3">
                 <Input
+                    name="name"
                   required
                   placeholder="Your Name"
+                    autoComplete="name"
                   className="rounded-xl border-primary/25 bg-background/70 text-sm transition-none focus:border-primary/25 focus:ring-0 focus-visible:border-primary/25 focus-visible:ring-0"
                 />
                 <Input
+                    name="email"
                   required
                   type="email"
                   placeholder="Email Address"
+                    autoComplete="email"
                   className="rounded-xl border-primary/25 bg-background/70 text-sm transition-none focus:border-primary/25 focus:ring-0 focus-visible:border-primary/25 focus-visible:ring-0"
                 />
+                  <Input
+                    name="project"
+                    required
+                    placeholder="Company / Project"
+                    className="rounded-xl border-primary/25 bg-background/70 text-sm transition-none focus:border-primary/25 focus:ring-0 focus-visible:border-primary/25 focus-visible:ring-0"
+                  />
                 <Textarea
+                    name="message"
                   required
                   rows={4}
                   placeholder="Project details or a quick hello..."
                   className="rounded-2xl border-primary/25 bg-background/70 text-sm transition-none focus:border-primary/25 focus:ring-0 focus-visible:border-primary/25 focus-visible:ring-0"
                 />
               </div>
-              <Button className="w-full rounded-full bg-gradient-mango px-8 py-4 text-sm font-semibold uppercase tracking-[0.35em] text-primary-foreground">
+                <Button
+                  className="w-full rounded-full bg-gradient-mango px-8 py-4 text-sm font-semibold uppercase tracking-[0.35em] text-primary-foreground disabled:cursor-not-allowed disabled:opacity-70"
+                  disabled={isSendingMessage}
+                >
                 <SendHorizonal className="mr-2 h-4 w-4" />
-                Send Message
+                  {isSendingMessage ? "Sending…" : "Send Message"}
               </Button>
             </form>
 

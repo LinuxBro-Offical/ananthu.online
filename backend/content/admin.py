@@ -89,6 +89,14 @@ class ResumeAdmin(TimestampedAdmin):
     list_display = ("resume_type", "file")
 
 
+@admin.register(models.ContactMessage)
+class ContactMessageAdmin(TimestampedAdmin):
+    list_display = ("name", "email", "ip_address", "created_at")
+    search_fields = ("name", "email", "project", "message", "ip_address")
+    readonly_fields = ("name", "email", "project", "message", "ip_address", "created_at", "updated_at")
+    list_filter = ("created_at",)
+
+
 @admin.register(models.SiteSettings)
 class SiteSettingsAdmin(TimestampedAdmin):
     fieldsets = (

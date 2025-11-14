@@ -100,11 +100,10 @@ All colors MUST be HSL.
     content: "";
     position: fixed;
     inset: -12% -20%;
-    background-image: url("https://images.unsplash.com/photo-1603415526960-f7e0328c63b1?auto=format&fit=crop&w=1600&q=80");
-    background-size: cover;
-    background-position: center;
-    opacity: 0.18;
-    filter: saturate(0.85) contrast(1.05) blur(1px);
+    background: radial-gradient(circle at 30% 20%, hsl(var(--primary) / 0.16), transparent 55%),
+      radial-gradient(circle at 70% 70%, hsl(var(--secondary) / 0.12), transparent 60%);
+    opacity: 0.22;
+    filter: blur(1px);
     transform: rotate(-5deg) scale(1.2);
     mix-blend-mode: screen;
     pointer-events: none;

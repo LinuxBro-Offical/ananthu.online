@@ -1,3 +1,7 @@
+from datetime import timedelta
+
+from django.utils import timezone
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -50,3 +54,48 @@ class PortfolioContentAPIView(APIView):
             ).data,
         }
         return Response(data)
+
+
+class ContactMessageAPIView(APIView):
+    rate_limit_per_ip = 3
+    rate_limit_window = timedelta(hours=24)
+
+    def post(self, request):
+        client_ip = self._get_client_ip(request)
+        if not client_ip:
+            return Response(
+                {"detail": "Unable to determine client IP."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        window_start = timezone.now() - self.rate_limit_window
+        recent_count = models.ContactMessage.objects.filter(
+            ip_address=client_ip, created_at__gte=window_start
+        ).count()
+
+        if recent_count >= self.rate_limit_per_ip:
+            return Response(
+                {
+                    "detail": "Too many submissions from this IP. Please try again later."
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        serializer = serializers.ContactMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        models.ContactMessage.objects.create(
+            ip_address=client_ip, **serializer.validated_data
+        )
+
+        return Response(
+            {"detail": "Message received. I’ll be in touch soon."},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @staticmethod
+    def _get_client_ip(request):
+        header = request.META.get("HTTP_X_FORWARDED_FOR")
+        if header:
+            return header.split(",")[0].strip()
+        return request.META.get("REMOTE_ADDR")

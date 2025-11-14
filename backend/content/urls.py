@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from . import viewsets
+from . import viewsets, views
 
 router = DefaultRouter()
 router.register("navigation", viewsets.NavigationLinkViewSet, basename="navigation")
@@ -15,5 +15,10 @@ urlpatterns = [
     path("site-settings/", viewsets.SiteSettingsView.as_view(), name="site-settings"),
     path("about/", viewsets.AboutSectionView.as_view(), name="about"),
     path("footer/", viewsets.FooterView.as_view(), name="footer"),
+    path(
+        "contact-messages/",
+        views.ContactMessageAPIView.as_view(),
+        name="contact-messages",
+    ),
 ] + router.urls
 

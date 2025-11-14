@@ -1,0 +1,14 @@
+[Unit]
+Description=Gunicorn Daemon for Django
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/ananthu.online/backend
+ExecStart=/home/ubuntu/env/bin/gunicorn --workers 3 --bind 0.0.0.0:9090 backend.wsgi
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { usePortfolioContent } from "@/hooks/usePortfolioContent";
 import * as LucideIcons from "lucide-react";
 import { Quote } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { postContactMessage } from "@/lib/api";
 
 const getLucideIconByName = (iconName?: string): LucideIcon => {
   if (!iconName) {
@@ -33,9 +35,40 @@ export const Contact = () => {
     threshold: 0.1,
   });
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    toast.success("Message sent! I'll get back to you soon.");
+    if (isSubmitting) {
+      return;
+    }
+
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    const payload = {
+      name: String(formData.get("name") || "").trim(),
+      email: String(formData.get("email") || "").trim(),
+      project: String(formData.get("project") || "").trim(),
+      message: String(formData.get("message") || "").trim(),
+    };
+
+    if (!payload.name || !payload.email || !payload.project || !payload.message) {
+      toast.error("Please fill in all fields before sending.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await postContactMessage(payload);
+      toast.success("Message sent! I'll get back to you soon.");
+      form.reset();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to send message right now.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const professionalResume = resumes.find((resume) => resume.resume_type === "professional");
@@ -68,25 +101,29 @@ export const Contact = () => {
           </p>
         </div>
 
-        <div className="relative mt-14 grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <Card className="relative overflow-hidden rounded-[2.2rem] border border-primary/25 bg-background/70 p-10 shadow-soft backdrop-blur-xl">
+        <div className="relative mt-14 grid w-full gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <Card className="relative min-w-0 max-w-full overflow-hidden rounded-[1.8rem] border border-primary/25 bg-background/70 p-5 shadow-soft backdrop-blur-xl sm:p-7 lg:p-8">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.15),transparent_55%)]" />
             <form onSubmit={handleSubmit} className="relative space-y-6">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-xs uppercase tracking-[0.3em] text-muted-foreground/80">Name</label>
                   <Input
+                    name="name"
                     required
                     placeholder="Your Name"
+                    autoComplete="name"
                     className="rounded-2xl border border-primary/20 bg-background/60 px-5 py-4 text-sm text-white placeholder:text-muted-foreground/60 focus:border-primary focus:ring-0"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs uppercase tracking-[0.3em] text-muted-foreground/80">Email</label>
                   <Input
+                    name="email"
                     type="email"
                     required
                     placeholder="your@email.com"
+                    autoComplete="email"
                     className="rounded-2xl border border-primary/20 bg-background/60 px-5 py-4 text-sm text-white placeholder:text-muted-foreground/60 focus:border-primary focus:ring-0"
                   />
                 </div>
@@ -95,6 +132,7 @@ export const Contact = () => {
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-[0.3em] text-muted-foreground/80">Project</label>
                 <Input
+                  name="project"
                   required
                   placeholder="Tell me about the mission..."
                   className="rounded-2xl border border-primary/20 bg-background/60 px-5 py-4 text-sm text-white placeholder:text-muted-foreground/60 focus:border-primary focus:ring-0"
@@ -104,6 +142,7 @@ export const Contact = () => {
               <div className="space-y-2">
                 <label className="text-xs uppercase tracking-[0.3em] text-muted-foreground/80">Message</label>
                 <Textarea
+                  name="message"
                   required
                   rows={6}
                   placeholder="Share the narrative, timeline, constraints, or inspiration."
@@ -114,15 +153,18 @@ export const Contact = () => {
               <Button
                 type="submit"
                 size="lg"
-                className="group relative w-full overflow-hidden rounded-full bg-gradient-mango px-10 py-6 text-xs font-semibold uppercase tracking-[0.35em] text-primary-foreground shadow-glow transition-transform duration-500 hover:scale-105"
+                disabled={isSubmitting}
+                className="group relative w-full overflow-hidden rounded-full bg-gradient-mango px-10 py-6 text-xs font-semibold uppercase tracking-[0.35em] text-primary-foreground shadow-glow transition-transform duration-500 hover:scale-105 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <span className="absolute inset-0 translate-y-full bg-white/20 transition-transform duration-500 ease-out group-hover:translate-y-0" />
-                <span className="relative">Send Transmission</span>
+                <span className="relative">
+                  {isSubmitting ? "Sending…" : "Send Transmission"}
+                </span>
               </Button>
             </form>
           </Card>
 
-          <div className="relative space-y-8 rounded-[2.2rem] border border-primary/15 bg-background/60 p-10 shadow-soft backdrop-blur-xl">
+          <div className="relative min-w-0 max-w-full space-y-8 rounded-[1.8rem] border border-primary/15 bg-background/60 p-5 shadow-soft backdrop-blur-xl sm:p-7 lg:p-8">
             <motion.div
               className="absolute -top-16 right-[-3rem] hidden h-36 w-36 rounded-[2.5rem] border border-primary/20 bg-background/40 backdrop-blur-2xl md:block"
               animate={{ rotateZ: [0, 6, 0], y: [0, -10, 0] }}
@@ -154,7 +196,7 @@ export const Contact = () => {
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group flex items-center justify-between rounded-2xl border border-primary/20 bg-background/60 px-6 py-4 text-sm text-muted-foreground transition-all hover:border-primary hover:bg-primary/10 hover:text-primary"
+                        className="group flex w-full flex-col gap-3 rounded-2xl border border-primary/20 bg-background/60 px-4 py-4 text-sm text-muted-foreground transition-all hover:border-primary hover:bg-primary/10 hover:text-primary sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6"
                         whileHover={{ x: 6 }}
                         transition={{
                           type: "spring",
@@ -163,36 +205,40 @@ export const Contact = () => {
                           delay: index * 0.03,
                         }}
                       >
-                        <div className="flex items-center gap-4">
-                          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/15 text-primary">
-                            <IconComponent className="h-5 w-5" />
+                        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+                          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary sm:h-12 sm:w-12">
+                            <IconComponent className="h-4 w-4 sm:h-5 sm:w-5" />
                           </span>
-                          <div className="flex flex-col text-left">
+                          <div className="flex min-w-0 flex-col text-left">
                             <span className="text-sm font-semibold uppercase tracking-[0.3em] text-primary">
                               {social.label}
                             </span>
-                            <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground/70">
+                            <span className="text-[0.65rem] uppercase tracking-[0.2em] text-muted-foreground/70 truncate">
                               {displayHref}
                             </span>
                           </div>
                         </div>
-                        <span className="text-xs uppercase tracking-[0.3em] text-primary/70">Open</span>
+                        <span className="text-xs uppercase tracking-[0.3em] text-primary/70 self-start sm:self-auto sm:mr-2">
+                          Open
+                        </span>
                       </motion.a>
                     );
                   })
                 : ["LinkedIn", "GitHub", "Upwork"].map((label) => (
                     <div
                       key={label}
-                      className="flex items-center justify-between rounded-2xl border border-primary/20 bg-background/60 px-6 py-4 text-sm text-muted-foreground"
+                      className="flex w-full flex-col gap-3 rounded-2xl border border-primary/20 bg-background/60 px-4 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6"
                     >
                       <span>{label}</span>
-                      <span className="text-xs uppercase tracking-[0.3em] text-primary/70">Open</span>
+                      <span className="text-xs uppercase tracking-[0.3em] text-primary/70 self-start sm:self-auto">
+                        Open
+                      </span>
                     </div>
                   ))}
             </div>
 
             <motion.div
-              className="grid gap-1 rounded-2xl border border-primary/20 bg-primary/10 px-6 py-4 text-center text-[0.6rem] uppercase tracking-[0.3em] text-primary md:text-left"
+              className="grid w-full gap-1 rounded-2xl border border-primary/20 bg-primary/10 px-6 py-4 text-center text-[0.6rem] uppercase tracking-[0.3em] text-primary md:text-left"
               animate={{ opacity: [0.7, 1, 0.7] }}
               transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
             >

@@ -164,3 +164,9 @@ class SiteSettingsSerializer(serializers.ModelSerializer):
             "contact_phone",
         )
 
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ContactMessage
+        fields = ("name", "email", "project", "message")
+

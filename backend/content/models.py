@@ -273,3 +273,19 @@ class Resume(TimeStampedModel):
 
     def __str__(self) -> str:
         return self.get_resume_type_display()
+
+
+class ContactMessage(TimeStampedModel):
+    name = models.CharField(max_length=120)
+    email = models.EmailField()
+    project = models.CharField(max_length=200)
+    message = models.TextField()
+    ip_address = models.GenericIPAddressField()
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Contact message"
+        verbose_name_plural = "Contact messages"
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.email}"
