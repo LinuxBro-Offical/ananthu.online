@@ -115,6 +115,7 @@ Aggregated payload used by the React front-end. Includes:
 | `GET /api/social/`        | Contact/social links with Lucide icon identifiers                |
 | `GET /api/resumes/`       | Downloadable resume URLs (professional / ATS)                    |
 | `GET /api/footer/`        | Footer text + tagline                                            |
+| `POST /api/contact-messages/` | Store contact form submissions (rate limited per IP)        |
 
 **Notes**
 - All image/file fields are returned as absolute URLs when a request context is available.
@@ -129,6 +130,7 @@ Aggregated payload used by the React front-end. Includes:
 2. Update any model instance (Site Settings, Navigation Link, Skill Category, Project, etc.).
 3. Upload gallery images, technology logos, and resume PDFs directly in admin.
 4. Front-end auto-refreshes on reload thanks to React Query caching (stale time 5 minutes).
+5. Contact form submissions are visible in **Contact messages** (read-only records with IP + timestamps).
 
 **Adding Projects**
 - Provide gradient colours, live URL, GitHub (`code_url`), and descriptive copy.
@@ -137,7 +139,16 @@ Aggregated payload used by the React front-end. Includes:
 
 ---
 
-## 7. Scripts & Tooling
+## 7. Contact Capture & Rate Limiting
+
+- Submitting either the “Hire Me” modal or the Contact section form issues a `POST` request to `/api/contact-messages/`.
+- The payload captures `name`, `email`, `project`, and `message`; the backend automatically records the client IP and timestamps.
+- Each IP can submit up to **3 messages per 24 hours**. Additional attempts receive HTTP 429 with a friendly error.
+- Messages surface in Django admin under **Contact messages**, so you can reply manually or hook up automations later.
+
+---
+
+## 8. Scripts & Tooling
 
 | Command                                           | Purpose                                           |
 |---------------------------------------------------|---------------------------------------------------|
@@ -147,10 +158,11 @@ Aggregated payload used by the React front-end. Includes:
 | `./env/bin/python manage.py runserver`            | Start Django REST backend                         |
 | `./env/bin/python manage.py seed_portfolio --reset` | Reseed portfolio content                        |
 | `./env/bin/python manage.py test`                 | (Optional) Run Django tests                       |
+| `deploy/scripts/cleanup_frontend.sh`              | (Prod branch) remove frontend source, keep `dist` |
 
 ---
 
-## 8. Deployment Notes
+## 9. Deployment Notes
 
 - **Frontend**: `npm run build` outputs static assets in `dist/`. Serve via CDN or static hosting (Vercel, Netlify, CloudFront, etc.).
 - **Backend**: Deploy Django behind Gunicorn/Uvicorn + Nginx (or similar). Configure environment variables (`DEBUG`, `ALLOWED_HOSTS`, `DATABASE_URL`, `MEDIA_ROOT`).
@@ -159,7 +171,7 @@ Aggregated payload used by the React front-end. Includes:
 
 ---
 
-## 9. Extensibility
+## 10. Extensibility
 
 - Add new content blocks by creating a model + serializer + viewset in `backend/content`.
 - Use `usePortfolioContent` or create additional React Query hooks for new endpoints.
@@ -168,15 +180,14 @@ Aggregated payload used by the React front-end. Includes:
 
 ---
 
-## 10. License & Credits
+## 11. License & Credits
 
 This project is proprietary to **Ananthu S Kumar**. Please request permission before reuse.  
 Design & engineering inspired by cinematic UI/UX principles, Mango Glow theme by Ananthu S Kumar.
 
 For inquiries or collaborations:
 - Portfolio: https://ananthu.online
-- Email: hello@ananthu.online
-- WhatsApp: https://wa.me/919876543210
+- WhatsApp: https://wa.me/917012474027
 
 ---
 
